@@ -19,7 +19,7 @@ if not api_key:
 api = keepa.Keepa(api_key)
 DOMAIN_UK = 2
 
-# Tab Layout Definition
+# Tab Layout
 tab1, tab2 = st.tabs(["📁 Scan Wholesale CSV", "🔍 Keepa Database Discovery"])
 
 # ----------------------------------------------------
@@ -94,7 +94,7 @@ with tab1:
                     st.error(f"Error processing CSV: {e}")
 
 # ----------------------------------------------------
-# TAB 2: LIVE KEEPA DATABASE DISCOVERY
+# TAB 2: LIVE KEEPA DATABASE DISCOVERY (FIXED)
 # ----------------------------------------------------
 with tab2:
     st.subheader("Filter Amazon UK Database for Winning Products")
@@ -121,7 +121,8 @@ with tab2:
         min_sellers = st.slider("Min FBA Sellers", min_value=1, max_value=5, value=2)
 
     if st.button("🔍 Search Keepa Database"):
-        query_payload = {
+        # Keepa Product Finder JSON payload
+        selection = {
             "current_SALES_gte": 1,
             "current_SALES_lte": int(max_bsr),
             "current_BUY_BOX_SHIPPING_gte": int(min_price * 100),
@@ -129,22 +130,25 @@ with tab2:
             "current_COUNT_LIVE_OFFERS_SHIPPING_gte": int(min_sellers),
             "current_COUNT_LIVE_OFFERS_SHIPPING_lte": 12,
             "sort": [["current_SALES", "asc"]],
-            "perPage": 40
+            "perPage": 50,  # Valid range: 50 to 10000
+            "page": 0       # 0-indexed page
         }
         
         if category_map[selected_cat]:
-            query_payload["rootCategory"] = category_map[selected_cat]
+            selection["rootCategory"] = category_map[selected_cat]
 
         with st.spinner("Searching Amazon UK database..."):
             try:
-                url = f"https://api.keepa.com/query?key={api_key}&domain={DOMAIN_UK}"
-                resp = requests.post(url, data=json.dumps(query_payload), headers={"Content-Type": "application/json"})
+                # Query Keepa /query endpoint with selection payload
+                url = f"https://api.keepa.com/query?key={api_key}&domain={DOMAIN_UK}&selection={json.dumps(selection)}"
+                resp = requests.get(url)
                 
                 if resp.status_code == 200:
                     asins = resp.json().get("asinList", [])
                     st.success(f"Matched **{len(asins)}** high-demand ASINs!")
                     
                     if asins:
+                        # Batch-fetch full product metrics for the matched ASINs
                         products = api.query(asins[:30], domain=DOMAIN_UK, stats=180, history=False)
                         shortlist = []
                         for p in products:
