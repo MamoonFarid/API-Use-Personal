@@ -17,7 +17,7 @@ DEFAULTS = {
     "bb_min": 22.0,
     "bb_max": 55.0,
     "min_sellers": 3,
-    "max_sellers": 5,
+    "max_sellers": 8,
     "min_rating": 4.4,
     "min_reviews": 250,
     "max_weight_g": 800,
